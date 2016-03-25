@@ -30,20 +30,21 @@ main :: IO ()
 main = do
   
   dynamicsWorld  <- createDynamicsWorld mempty
-  _              <- addGroundPlane dynamicsWorld (RigidBodyID 0) 0
+  _              <- addGroundPlane dynamicsWorld 0 0
     
   void . flip runStateT newWorld $ do 
+    cubeS <- createBoxShape (V3 1 1 1)
     forM_ [1..1000] $ \i -> do
-      rigidBody <- addCube dynamicsWorld (RigidBodyID i) mempty 
-        { pcPosition = V3 0 20 0
-        , pcRotation = Quaternion 0.5 (V3 0 1 1)
+      rigidBody <- addRigidBody dynamicsWorld i cubeS mempty 
+        { rbPosition = V3 0 20 0
+        , rbRotation = Quaternion 0.5 (V3 0 1 1)
         }
       wldCubes . at (fromIntegral i) ?= Cube
         { _cubBody = rigidBody
         }
     forever $ do
       
-      stepSimulation dynamicsWorld 90
+      stepSimulationSimple dynamicsWorld 90
 
       cubes <- Map.elems <$> use wldCubes
       forM_ cubes $ \cube -> do

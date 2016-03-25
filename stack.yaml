@@ -1,11 +1,6 @@
 packages:
 - '.'
-# For tests
-- ../glfw-pal
-- ../vr-pal
-- ../gl-pal
-- ../linear-extra
-- ../lens-extra
-- ../halive
-- ../openvr-hs
+- location:
+    git: https://github.com/lukexi/linear-extra.git
+    commit: 5027799b30981296cce1e95b8903bfe37fa72197
 resolver: nightly-2016-02-02
