@@ -11,37 +11,98 @@ module Physics.Bullet.CollisionShape where
 
 import qualified Language.C.Inline.Cpp as C
 
-import Foreign.C
-import Linear.Extra
 import Data.Monoid
-import Control.Monad.Trans
-import Physics.Bullet.Types
+import Data.Vector.Storable.Mutable (IOVector)
+import Foreign.C
+import Foreign.Ptr
+import Linear.Extra
+import qualified Data.Vector.Storable.Mutable as V
 
-C.context (C.cppCtx <> C.funCtx)
+C.context (C.cppCtx <> C.funCtx <> C.vecCtx)
 
 C.include "<btBulletDynamicsCommon.h>"
 
-createStaticPlaneShape :: (MonadIO m, Real a) => a -> m CollisionShape
-createStaticPlaneShape planeOffset = liftIO $ CollisionShape <$> [C.block| void * {
-    btCollisionShape *shape = new btStaticPlaneShape(btVector3(0, 0, 1) , $(float yP));
-    return shape;
-    }|]
-    where
-        yP = realToFrac planeOffset * 0.5 -- bullet uses 1/2 extents
+newtype CollisionShape = CollisionShape (Ptr ())
+newtype MeshInterface = MeshInterface (Ptr ())
 
-createBoxShape :: (MonadIO m, Fractional a, Real a) => V3 a -> m CollisionShape
-createBoxShape size = liftIO $ CollisionShape <$> [C.block| void * {
+boxShape :: V3 CFloat -- ^ half box size
+         -> IO CollisionShape
+boxShape (V3 sx sy sz) = CollisionShape <$> [C.block| void * {
     btVector3 s = btVector3($(float sx), $(float sy), $(float sz));
-    // btCollisionShape *shape = new btBoxShape(btVector3(1,1,1));
-    // shape->setLocalScaling(s);
     btCollisionShape *shape = new btBoxShape(s);
     return shape;
     }|]
-    where
-        V3 sx sy sz = realToFrac <$> size * 0.5 -- bullet uses 1/2 extents
 
-createSphereShape :: (MonadIO m, Fractional a, Real a) => a -> m CollisionShape
-createSphereShape (realToFrac -> radius) = liftIO $ CollisionShape <$> [C.block| void * {
+sphereShape :: CFloat -- ^ sphere radius
+            -> IO CollisionShape
+sphereShape radius = CollisionShape <$> [C.block| void * {
     btCollisionShape *shape = new btSphereShape($(float radius));
     return shape;
     }|]
+
+cylinderShape :: V3 CFloat -- ^ half size
+              -> IO CollisionShape
+cylinderShape (V3 sx sy sz) = CollisionShape <$> [C.block| void * {
+    btVector3 n = btVector3($(float sx), $(float sy), $(float sz));
+    btCollisionShape *shape = new btCylinderShape(n);
+    return shape;
+    }|]
+
+capsuleShape :: CFloat -- ^ radius
+             -> CFloat -- ^ height
+             -> IO CollisionShape
+capsuleShape radius height = CollisionShape <$> [C.block| void * {
+    btCollisionShape *shape = new btCapsuleShape($(float radius), $(float height));
+    return shape;
+    }|]
+
+coneShape :: CFloat -- ^ radius
+          -> CFloat -- ^ height
+          -> IO CollisionShape
+coneShape radius height = CollisionShape <$> [C.block| void * {
+    btCollisionShape *shape = new btConeShape($(float radius), $(float height));
+    return shape;
+    }|]
+
+staticPlaneShape :: V3 CFloat -- ^ plane normal
+                 -> CFloat    -- ^ half plane offset along normal
+                 -> IO CollisionShape
+staticPlaneShape (V3 nx ny nz) offset = CollisionShape <$> [C.block| void * {
+    btVector3 n = btVector3($(float nx), $(float ny), $(float nz));
+    btCollisionShape *shape = new btStaticPlaneShape(n, $(float offset));
+    return shape;
+    }|]
+
+convexHullShape :: IOVector CFloat -> IO CollisionShape
+convexHullShape points = CollisionShape <$> [C.block| void * {
+    btCollisionShape *shape = new btConvexHullShape($vec-ptr:(float *points), $(int numPoints));
+    return shape;
+    }|]
+  where
+    numPoints = fromIntegral $ V.length points `div` 3
+
+triangleMesh :: IOVector CInt -> IOVector CFloat -> IO MeshInterface
+triangleMesh triangles points = MeshInterface <$> [C.block| void * {
+    btTriangleIndexVertexArray *mesh = new btTriangleIndexVertexArray($(int numTriangles), $vec-ptr:(int *triangles), 3, $(int numPoints), $vec-ptr:(float *points), 3);
+    return mesh;
+    }|]
+  where
+    numTriangles = fromIntegral $ V.length triangles `div` 3 
+    numPoints = fromIntegral $ V.length points `div` 3 
+
+convexTriangleMeshShape :: MeshInterface -> IO CollisionShape
+convexTriangleMeshShape (MeshInterface mesh) = CollisionShape <$> [C.block| void * {
+    btCollisionShape *shape = new btConvexTriangleMeshShape((btStridingMeshInterface *)$(void *mesh));
+    return shape;
+    }|]
+
+bvhTriangleMeshShape :: MeshInterface -> Bool -> IO CollisionShape
+bvhTriangleMeshShape (MeshInterface mesh) compress = CollisionShape <$> [C.block| void * {
+    btCollisionShape *shape = new btBvhTriangleMeshShape((btStridingMeshInterface *)$(void *mesh), (bool)$(int compressI));
+    return shape;
+    }|]
+  where
+    compressI = fromIntegral . fromEnum $ compress
+
+-- ToDo: 
+-- * multiSphereShape

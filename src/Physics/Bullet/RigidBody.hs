@@ -11,44 +11,18 @@ module Physics.Bullet.RigidBody where
 
 import qualified Language.C.Inline.Cpp as C
 
+import Control.Monad.Trans
+import Data.Monoid
 import Foreign.C
 import Foreign.ForeignPtr
 import Foreign.Marshal.Array
 import Linear.Extra
-import Control.Monad.Trans
-import Data.Monoid
-import Physics.Bullet.Types
 import Physics.Bullet.CollisionShape
-import Control.Monad
+import Physics.Bullet.Types
 
 C.context (C.cppCtx <> C.funCtx)
 
 C.include "<btBulletDynamicsCommon.h>"
-
-
-
--- Ground plane should always be infinite!
-addGroundPlane :: (Functor m, MonadIO m) => DynamicsWorld -> CollisionObjectID -> Float -> m RigidBody
-addGroundPlane dynamicsWorld rigidBodyID height  = do
-    collisionShape <- createStaticPlaneShape height
-    addRigidBody dynamicsWorld rigidBodyID collisionShape mempty { rbRotation = axisAngle ( V3 1 0 0 ) ((-pi)/2), rbMass = 0 }
-
--- | Build a cubic room from static planes
-addStaticRoom :: (MonadIO m) => DynamicsWorld -> CollisionObjectID -> Float -> m ()
-addStaticRoom dynamicsWorld bodyID height = do
-    let rotations =
-          [ axisAngle (V3 1 0 0) ((-pi)/2)
-          , axisAngle (V3 1 0 0) (( pi)/2)
-          , axisAngle (V3 0 1 0) ((-pi)/2)
-          , axisAngle (V3 0 1 0) (( pi)/2)
-          , axisAngle (V3 0 1 0) (0) 
-          , axisAngle (V3 0 1 0) (pi)
-          ]
-    forM_ rotations $ \rotation -> do
-        collisionShape <- createStaticPlaneShape height
-        addRigidBody dynamicsWorld bodyID collisionShape mempty { rbRotation = rotation, rbMass = 0 }
-        
-    return ()
 
 addRigidBody :: (Functor m, MonadIO m) => DynamicsWorld -> CollisionObjectID -> CollisionShape -> RigidBodyConfig -> m RigidBody
 addRigidBody (DynamicsWorld dynamicsWorld) (fromIntegral -> rigidBodyID) (CollisionShape collisionShape) RigidBodyConfig{..} = liftIO $ 

@@ -17,6 +17,7 @@ import Linear.Extra
 import Control.Monad.Trans
 import Data.Monoid
 import Physics.Bullet.Types
+import Physics.Bullet.CollisionShape
 
 C.context (C.cppCtx <> C.funCtx)
 
