@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                bullet-mini
-version:             0.1.0.1
+version:             0.1.0.2
 synopsis:            Minimal bindings to bullet physics
 -- description:
 homepage:            tree.is
