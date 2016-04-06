@@ -16,6 +16,10 @@ build-type:          Simple
 -- extra-source-files:  
 cabal-version:       >=1.10
 
+flag debug
+    Default: False
+    Description: Enable debugging with gdb
+
 test-suite linking
   type:                exitcode-stdio-1.0
   main-is:             Linking.hs
@@ -61,6 +65,8 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   extra-libraries:   stdc++
+  if flag(debug)
+    cc-options: -g
   if os(windows)
     -- Just this works now with GHC 7.10.3, and you shouldn't need to mess with PATH : )
     extra-libraries:   libstdc++-6
