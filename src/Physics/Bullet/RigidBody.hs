@@ -12,6 +12,7 @@ module Physics.Bullet.RigidBody where
 import qualified Language.C.Inline.Cpp as C
 
 import Control.Monad.Trans
+import Data.Maybe
 import Data.Monoid
 import Foreign.C
 import Foreign.ForeignPtr
@@ -39,6 +40,7 @@ data RigidBodyConfig = RigidBodyConfig
   , rbMass           :: Float
   , rbCollisionGroup :: CShort
   , rbCollisionMask  :: CShort
+  , rbUserIndex      :: Maybe CollisionObjectID
   }
 
 instance Monoid RigidBodyConfig where
@@ -50,11 +52,12 @@ instance Monoid RigidBodyConfig where
         , rbRestitution    = 0.5
         , rbCollisionGroup = 1
         , rbCollisionMask  = 1
+        , rbUserIndex      = Nothing
         }
   mappend _ b = b
 
-addRigidBody :: (Functor m, MonadIO m) => DynamicsWorld -> CollisionObjectID -> CollisionShape -> RigidBodyConfig -> m RigidBody
-addRigidBody (DynamicsWorld dynamicsWorld) (fromIntegral -> rigidBodyID) (CollisionShape collisionShape) RigidBodyConfig{..} = liftIO $
+addRigidBody :: (Functor m, MonadIO m) => DynamicsWorld -> CollisionShape -> RigidBodyConfig -> m RigidBody
+addRigidBody (DynamicsWorld dynamicsWorld) (CollisionShape collisionShape) RigidBodyConfig{..} = liftIO $
     RigidBody . CollisionObject <$> [C.block| void* {
 
         btDiscreteDynamicsWorld* dynamicsWorld = (btDiscreteDynamicsWorld*) $(void* dynamicsWorld);
@@ -81,7 +84,8 @@ addRigidBody (DynamicsWorld dynamicsWorld) (fromIntegral -> rigidBodyID) (Collis
         rigidBody->setRestitution($(float r));
 
         // Attach the given CollisionObjectID
-        rigidBody->setUserIndex($(int rigidBodyID));
+        if ($(int rigidBodyID) != -1)
+            rigidBody->setUserIndex($(int rigidBodyID));
 
         dynamicsWorld->addRigidBody(
             rigidBody,
@@ -96,6 +100,7 @@ addRigidBody (DynamicsWorld dynamicsWorld) (fromIntegral -> rigidBodyID) (Collis
       (Quaternion qw (V3 qx qy qz)) = realToFrac <$> rbRotation
       r                             = realToFrac     rbRestitution
       m                             = realToFrac     rbMass
+      rigidBodyID  = fromIntegral $ fromMaybe (-1) rbUserIndex
 
 removeRigidBody :: (Functor m, MonadIO m) => DynamicsWorld -> RigidBody -> m ()
 removeRigidBody (DynamicsWorld dynamicsWorld) (toCollisionObjectPointer -> rigidBody) = liftIO [C.block| void {

@@ -30,12 +30,12 @@ main :: IO ()
 main = do
   dynamicsWorld  <- createDynamicsWorld mempty
   groundShape <- staticPlaneShape (V3 0 1 0) 0
-  rigidBody <- addRigidBody dynamicsWorld 0 groundShape mempty{ rbMass = 0 }
+  rigidBody <- addRigidBody dynamicsWorld groundShape mempty{ rbMass = 0 }
 
   void . flip runStateT newWorld $ do
     cubeS <- liftIO $ boxShape (V3 1 1 1)
     forM_ [1..1000] $ \i -> do
-      rigidBody <- liftIO $ addRigidBody dynamicsWorld i cubeS mempty
+      rigidBody <- liftIO $ addRigidBody dynamicsWorld cubeS mempty
         { rbPosition = V3 0 20 0
         , rbRotation = Quaternion 0.5 (V3 0 1 1)
         }

@@ -15,12 +15,12 @@ main = do
 
     -- ground plane
     groundShape <- staticPlaneShape (V3 0 1 0) 0
-    ground <- addRigidBody dynamicsWorld 0 groundShape mempty{ rbMass = 0 }
+    _ <- addRigidBody dynamicsWorld groundShape mempty{ rbMass = 0 }
 
     ballShape <- sphereShape 1
-    ball <- addRigidBody dynamicsWorld 1 ballShape mempty{ rbPosition = V3 0 10 0
-                                                         , rbMass = 1
-                                                         }
+    ball <- addRigidBody dynamicsWorld ballShape mempty{ rbPosition = V3 0 10 0
+                                                       , rbMass = 1
+                                                       }
 
     let loop = do stepSimulationWithTimestep dynamicsWorld (realToFrac dt) 10 dt
 
@@ -31,4 +31,3 @@ main = do
                   loop
 
     loop
-    putStrLn "OK"
