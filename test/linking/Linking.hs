@@ -28,14 +28,14 @@ newWorld = World mempty
 
 main :: IO ()
 main = do
-  
   dynamicsWorld  <- createDynamicsWorld mempty
-  _              <- addGroundPlane dynamicsWorld 0 0
-    
-  void . flip runStateT newWorld $ do 
-    cubeS <- createBoxShape (V3 1 1 1)
+  groundShape <- staticPlaneShape (V3 0 1 0) 0
+  rigidBody <- addRigidBody dynamicsWorld 0 groundShape mempty{ rbMass = 0 }
+
+  void . flip runStateT newWorld $ do
+    cubeS <- liftIO $ boxShape (V3 1 1 1)
     forM_ [1..1000] $ \i -> do
-      rigidBody <- addRigidBody dynamicsWorld i cubeS mempty 
+      rigidBody <- liftIO $ addRigidBody dynamicsWorld i cubeS mempty
         { rbPosition = V3 0 20 0
         , rbRotation = Quaternion 0.5 (V3 0 1 1)
         }
@@ -43,8 +43,7 @@ main = do
         { _cubBody = rigidBody
         }
     forever $ do
-      
-      stepSimulationSimple dynamicsWorld 90
+      liftIO $ stepSimulationSimple dynamicsWorld 90
 
       cubes <- Map.elems <$> use wldCubes
       forM_ cubes $ \cube -> do

@@ -10,15 +10,14 @@ dt = 1 / 60
 
 main :: IO ()
 main = do
+    putStrLn "Test"
     dynamicsWorld  <- createDynamicsWorld DynamicsWorldConfig{ dwGravity = -9.81 }
 
     -- ground plane
-    groundShape <- createStaticPlaneShape (0 :: Float)
-    ground <- addRigidBody dynamicsWorld 0 groundShape mempty{ rbRotation    = axisAngle (V3 1 0 0) (-pi/2)
-                                                             , rbMass        = 0
-                                                             }
+    groundShape <- staticPlaneShape (V3 0 1 0) 0
+    ground <- addRigidBody dynamicsWorld 0 groundShape mempty{ rbMass = 0 }
 
-    ballShape <- createSphereShape (1 :: Float)
+    ballShape <- sphereShape 1
     ball <- addRigidBody dynamicsWorld 1 ballShape mempty{ rbPosition = V3 0 10 0
                                                          , rbMass = 1
                                                          }
