@@ -16,12 +16,21 @@ import Linear.Extra
 import Data.Monoid
 import Control.Monad.Trans
 import Physics.Bullet.Types
+import Physics.Bullet.CollisionShape
 
 C.context (C.cppCtx <> C.funCtx)
 
 C.include "<btBulletDynamicsCommon.h>"
 
-
+addCollisionObject :: DynamicsWorld -> CollisionShape -> IO CollisionObject
+addCollisionObject (DynamicsWorld world) (CollisionShape shape) = CollisionObject <$> [C.block| void * {
+        btDiscreteDynamicsWorld* world = (btDiscreteDynamicsWorld*) $(void* world);
+        btCollisionShape* shape = (btCollisionShape*) $(void* shape);
+        btCollisionObject* obj = new btCollisionObject();
+        obj->setCollisionShape(shape);
+        world->addCollisionObject(obj);
+        return obj;
+    }|]
 
 getCollisionObjectID :: (ToCollisionObjectPointer a, MonadIO m) => a -> m CollisionObjectID
 getCollisionObjectID (toCollisionObjectPointer -> collisionObject) = liftIO $ 
