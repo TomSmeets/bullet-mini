@@ -14,9 +14,10 @@ import qualified Language.C.Inline.Cpp as C
 import Data.Monoid
 import Data.Vector.Storable.Mutable (IOVector)
 import Foreign.C
+
 import Foreign.Ptr
 import Linear.Extra
-import qualified Data.Vector.Storable.Mutable as V
+import qualified Data.Vector.Storable as V
 
 C.context (C.cppCtx <> C.funCtx <> C.vecCtx)
 
@@ -73,22 +74,24 @@ staticPlaneShape (V3 nx ny nz) offset = CollisionShape <$> [C.block| void * {
     return shape;
     }|]
 
-convexHullShape :: IOVector CFloat -> IO CollisionShape
-convexHullShape points = CollisionShape <$> [C.block| void * {
+convexHullShape :: CInt -> IOVector CFloat -> IO CollisionShape
+convexHullShape numPoints points = CollisionShape <$> [C.block| void * {
     btCollisionShape *shape = new btConvexHullShape($vec-ptr:(float *points), $(int numPoints));
     return shape;
     }|]
-  where
-    numPoints = fromIntegral $ V.length points `div` 3
 
-triangleMesh :: IOVector CInt -> IOVector CFloat -> IO MeshInterface
-triangleMesh triangles points = MeshInterface <$> [C.block| void * {
-    btTriangleIndexVertexArray *mesh = new btTriangleIndexVertexArray($(int numTriangles), $vec-ptr:(int *triangles), 3, $(int numPoints), $vec-ptr:(float *points), 3);
-    return mesh;
+triangleMesh :: CInt -> IOVector CInt -> CInt -> IOVector CFloat -> IO MeshInterface
+triangleMesh numTriangles triangles numPoints points = MeshInterface <$> [C.block| void * {
+        // Haskell garbage-collecs these vectors.
+        // Make a copy!
+        int* triangles = new int[$vec-len:triangles];
+        float* points = new float[$vec-len:points];
+        memcpy(triangles, $vec-ptr:(int* triangles), $vec-len:triangles * sizeof(int));
+        memcpy(points,    $vec-ptr:(float* points),  $vec-len:points    * sizeof(float));
+
+        btStridingMeshInterface* mesh = new btTriangleIndexVertexArray($(int numTriangles), triangles, 3*sizeof(int), $(int numPoints), points, 3*sizeof(btScalar));
+        return mesh;
     }|]
-  where
-    numTriangles = fromIntegral $ V.length triangles `div` 3 
-    numPoints = fromIntegral $ V.length points `div` 3 
 
 convexTriangleMeshShape :: MeshInterface -> IO CollisionShape
 convexTriangleMeshShape (MeshInterface mesh) = CollisionShape <$> [C.block| void * {
@@ -96,13 +99,11 @@ convexTriangleMeshShape (MeshInterface mesh) = CollisionShape <$> [C.block| void
     return shape;
     }|]
 
-bvhTriangleMeshShape :: MeshInterface -> Bool -> IO CollisionShape
-bvhTriangleMeshShape (MeshInterface mesh) compress = CollisionShape <$> [C.block| void * {
-    btCollisionShape *shape = new btBvhTriangleMeshShape((btStridingMeshInterface *)$(void *mesh), (bool)$(int compressI));
-    return shape;
+bvhTriangleMeshShape :: MeshInterface -> IO CollisionShape
+bvhTriangleMeshShape (MeshInterface mesh) = CollisionShape <$> [C.block| void * {
+    btBvhTriangleMeshShape *shape = new btBvhTriangleMeshShape((btStridingMeshInterface *)$(void *mesh),true,true);
+    return (btCollisionShape *) shape;
     }|]
-  where
-    compressI = fromIntegral . fromEnum $ compress
 
 -- ToDo: 
 -- * multiSphereShape
