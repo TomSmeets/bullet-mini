@@ -25,8 +25,8 @@ C.include "<BulletCollision/CollisionDispatch/btGhostObject.h>"
 
 C.verbatim [r|
 
-typedef void (*DrawFunctionPtr)(float, float, float, 
-                                float, float, float, 
+typedef void (*DrawFunctionPtr)(float, float, float,
+                                float, float, float,
                                 float, float, float);
 
 class MiniDebugDraw: public btIDebugDraw {
@@ -44,11 +44,11 @@ public:
                                     btScalar distance,int lifeTime,const btVector3& color);
 
     virtual void   reportErrorWarning(const char* warningString);
-  
+
     virtual void   draw3dText(const btVector3& location,const char* textString);
-  
+
     virtual void   setDebugMode(int debugMode);
-  
+
     virtual int    getDebugMode() const { return m_debugMode; }
 };
 
@@ -60,7 +60,7 @@ MiniDebugDraw::MiniDebugDraw(DrawFunctionPtr drawPtr) {
 void MiniDebugDraw::drawLine(const btVector3& from
                             ,const btVector3& to
                             ,const btVector3& color){
-    m_drawFunction(from.getX(),  from.getY(),  from.getZ(), 
+    m_drawFunction(from.getX(),  from.getY(),  from.getZ(),
                  to.getX(),    to.getY(),    to.getZ(),
                  color.getX(), color.getY(), color.getZ());
 };
@@ -92,16 +92,16 @@ debugDrawDynamicsWorld :: (RealFrac a, MonadIO m) => DynamicsWorld
                                                   -> DrawFunction a
                                                   -> m ()
 debugDrawDynamicsWorld (DynamicsWorld dynamicsWorld) drawFunction = liftIO $ do
-    let drawFunctionFlat x1 y1 z1 x2 y2 z2 r g b = 
+    let drawFunctionFlat x1 y1 z1 x2 y2 z2 r g b =
             drawFunction (realToFrac <$> V3 x1 y1 z1)
                          (realToFrac <$> V3 x2 y2 z2)
                          (realToFrac <$> V4 r g b 1)
     [C.block| void {
         btDiscreteDynamicsWorld *dynamicsWorld = (btDiscreteDynamicsWorld *)$(void *dynamicsWorld);
 
-        DrawFunctionPtr drawFunctionPtr = $fun:(void (*drawFunctionFlat)( 
-                                           float, float, float, 
-                                           float, float, float, 
+        DrawFunctionPtr drawFunctionPtr = $fun:(void (*drawFunctionFlat)(
+                                           float, float, float,
+                                           float, float, float,
                                            float, float, float));
         MiniDebugDraw *miniDebugDraw = new MiniDebugDraw(drawFunctionPtr);
         dynamicsWorld->setDebugDrawer(miniDebugDraw);
