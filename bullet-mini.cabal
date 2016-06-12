@@ -54,6 +54,7 @@ library
                        Physics.Bullet.RigidBody
                        Physics.Bullet.SpringConstraint
                        Physics.Bullet.Types
+                       Physics.Bullet.DebugDraw
   build-depends:       base
                      , binary
                      , inline-c >= 0.5.4.3
@@ -93,6 +94,7 @@ library
     src/Physics/Bullet/Collision.cpp
     src/Physics/Bullet/CollisionObject.cpp
     src/Physics/Bullet/CollisionShape.cpp
+    src/Physics/Bullet/DebugDraw.cpp
     src/Physics/Bullet/DynamicsWorld.cpp
     src/Physics/Bullet/GhostObject.cpp
     src/Physics/Bullet/PointToPointConstraint.cpp

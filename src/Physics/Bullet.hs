@@ -9,3 +9,4 @@ import Physics.Bullet.PointToPointConstraint as O
 import Physics.Bullet.RigidBody              as O
 import Physics.Bullet.SpringConstraint       as O
 import Physics.Bullet.Types                  as O
+import Physics.Bullet.DebugDraw              as O
